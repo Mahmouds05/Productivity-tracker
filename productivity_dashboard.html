@@ -13,17 +13,15 @@ button { padding:6px 14px; border:none; border-radius:6px; cursor:pointer; margi
 button.add { background:#28a745; color:white; }
 button.export { background:#007bff; color:white; }
 button.edit { background:#ffc107; color:white; }
-button.save { background:#28a745; color:white; }
-button.cancel { background:#dc3545; color:white; }
-table { width:100%; border-collapse:collapse; margin-top:20px; }
+.collapsible { background:#eee; cursor:pointer; padding:8px; width:100%; border:none; text-align:right; outline:none; font-size:15px; border-radius:6px; }
+.active, .collapsible:hover { background:#ccc; }
+.content { padding:0 10px; display:none; overflow:hidden; background-color:#f9f9f9; border-left:3px solid #ccc; margin-bottom:10px; border-radius:6px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
 th, td { padding:10px; border:1px solid #ddd; text-align:center; }
 th { background:#333; color:white; }
 .success { color:green; font-weight:bold; }
 .fail { color:red; font-weight:bold; }
 .note { font-size:0.9em; color:#555; }
-.subtable { width:90%; margin:5px auto; border:1px solid #bbb; border-radius:6px; }
-.subtable th { background:#555; color:white; font-size:0.9em; }
-.subtable td { font-size:0.9em; padding:5px; }
 </style>
 </head>
 <body>
@@ -62,18 +60,7 @@ th { background:#333; color:white; }
 
 <div class="container">
   <h2>سجلات الموظفين</h2>
-  <table id="recordsTable">
-    <tr>
-      <th>الاسم</th>
-      <th>عدد الأيام</th>
-      <th>إجمالي الساعات</th>
-      <th>إجمالي المكالمات</th>
-      <th>المتوسط الشهري</th>
-      <th>تحقيق التارجت</th>
-      <th>النوت</th>
-      <th>تعديل</th>
-    </tr>
-  </table>
+  <div id="recordsContainer"></div>
 </div>
 
 <script>
@@ -92,67 +79,58 @@ function addRecord() {
   let achieved = calls >= required;
 
   records.push({ name, hours, calls, note: note||"-", date, achieved, required });
-  renderTable();
+  renderRecords();
   saveToLocalStorage();
 }
 
-function renderTable() {
-  let table = document.getElementById("recordsTable");
+function renderRecords(){
+  let container = document.getElementById("recordsContainer");
+  container.innerHTML = "";
   let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
-  table.innerHTML = `
-    <tr>
-      <th>الاسم</th>
-      <th>عدد الأيام</th>
-      <th>إجمالي الساعات</th>
-      <th>إجمالي المكالمات</th>
-      <th>المتوسط الشهري</th>
-      <th>تحقيق التارجت</th>
-      <th>النوت</th>
-      <th>تعديل</th>
-    </tr>
-  `;
+  
   names.forEach(name=>{
     let empRecords = records.filter(r=>r.name===name);
-    let days = empRecords.length;
+    if(empRecords.length===0) return;
+    
     let totalHours = empRecords.reduce((a,b)=>a+b.hours,0);
     let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
-    let average = days ? (totalCalls/days).toFixed(2) : 0;
-    let achieved = empRecords.every(r=>r.calls>=r.required) && days>0;
-    let notes = empRecords.map(r=>r.note).join(" | ") || "-";
+    let days = empRecords.length;
+    let average = (totalCalls/days).toFixed(2);
+    let achieved = empRecords.every(r=>r.calls>=r.required);
 
-    // الصف الرئيسي للموظف
-    let row = table.insertRow(-1);
-    row.innerHTML = `
-      <td>${name}</td>
-      <td>${days}</td>
-      <td>${totalHours}</td>
-      <td>${totalCalls}</td>
-      <td>${average}</td>
-      <td class="${achieved?'success':'fail'}">${achieved?'✔ محقق':'✘ غير محقق'}</td>
-      <td class="note">${notes}</td>
-      <td></td>
-    `;
+    // زر collabsible
+    let btn = document.createElement("button");
+    btn.className = "collapsible";
+    btn.innerHTML = `${name} - إجمالي الأيام: ${days}, ساعات: ${totalHours}, مكالمات: ${totalCalls}, متوسط: ${average}, ${achieved?'✔ محقق':'✘ غير محقق'}`;
+    container.appendChild(btn);
 
-    // إضافة سجل يومي لكل موظف
-    if(days>0){
-      let subRow = table.insertRow(-1);
-      let cell = subRow.insertCell(0);
-      cell.colSpan = 8;
-      let subTable = `<table class="subtable">
-        <tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th></tr>`;
-      empRecords.forEach((r,i)=>{
-        subTable += `<tr>
-          <td>${r.date}</td>
-          <td>${r.hours}</td>
-          <td>${r.calls}</td>
-          <td>${r.note}</td>
-          <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
-        </tr>`;
-      });
-      subTable += `</table>`;
-      cell.innerHTML = subTable;
-    }
+    // content collapsible
+    let content = document.createElement("div");
+    content.className = "content";
+    let subTable = `<table><tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th></tr>`;
+    empRecords.forEach((r,i)=>{
+      subTable += `<tr>
+        <td>${r.date}</td>
+        <td>${r.hours}</td>
+        <td>${r.calls}</td>
+        <td>${r.note}</td>
+        <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
+      </tr>`;
+    });
+    subTable += `</table>`;
+    content.innerHTML = subTable;
+    container.appendChild(content);
   });
+
+  let coll = document.getElementsByClassName("collapsible");
+  for(let i=0;i<coll.length;i++){
+    coll[i].onclick = function(){
+      this.classList.toggle("active");
+      let content = this.nextElementSibling;
+      if(content.style.display==="block"){ content.style.display="none"; }
+      else { content.style.display="block"; }
+    }
+  }
 }
 
 function editDailyRecord(name,index){
@@ -165,7 +143,7 @@ function editDailyRecord(name,index){
     record.calls = Number(calls);
     record.required = record.hours*17;
     record.achieved = record.calls >= record.required;
-    renderTable();
+    renderRecords();
     saveToLocalStorage();
   }
 }
@@ -173,13 +151,17 @@ function editDailyRecord(name,index){
 function saveToLocalStorage(){ localStorage.setItem("prodData", JSON.stringify(records)); }
 function loadFromLocalStorage(){
   let saved = localStorage.getItem("prodData");
-  if(saved){ records=JSON.parse(saved); renderTable(); }
+  if(saved){ records=JSON.parse(saved); renderRecords(); }
 }
 
 function exportExcel(){
-  let table = document.getElementById("recordsTable");
+  let tableHTML = `<table><tr><th>اسم الموظف</th><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>نوت</th></tr>`;
+  records.forEach(r=>{
+    tableHTML += `<tr><td>${r.name}</td><td>${r.date}</td><td>${r.hours}</td><td>${r.calls}</td><td>${r.note}</td></tr>`;
+  });
+  tableHTML += `</table>`;
   let workbook = XLSX.utils.book_new();
-  let sheet = XLSX.utils.table_to_sheet(table);
+  let sheet = XLSX.utils.table_to_sheet(new DOMParser().parseFromString(tableHTML,"text/html").querySelector("table"));
   XLSX.utils.book_append_sheet(workbook,sheet,"Productivity");
   XLSX.writeFile(workbook,"productivity_report.xlsx");
 }
