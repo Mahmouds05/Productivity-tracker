@@ -13,6 +13,7 @@ button { padding:6px 14px; border:none; border-radius:6px; cursor:pointer; margi
 button.add { background:#28a745; color:white; }
 button.export { background:#007bff; color:white; }
 button.edit { background:#ffc107; color:white; }
+button.delete { background:#dc3545; color:white; }
 .collapsible { background:#eee; cursor:pointer; padding:8px; width:100%; border:none; text-align:right; outline:none; font-size:15px; border-radius:6px; }
 .active, .collapsible:hover { background:#ccc; }
 .content { padding:0 10px; display:none; overflow:hidden; background-color:#f9f9f9; border-left:3px solid #ccc; margin-bottom:10px; border-radius:6px; }
@@ -107,66 +108,10 @@ function renderRecords(){
     // content collapsible
     let content = document.createElement("div");
     content.className = "content";
-    let subTable = `<table><tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th></tr>`;
+    let subTable = `<table><tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th><th>حذف</th></tr>`;
     empRecords.forEach((r,i)=>{
       subTable += `<tr>
         <td>${r.date}</td>
         <td>${r.hours}</td>
         <td>${r.calls}</td>
         <td>${r.note}</td>
-        <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
-      </tr>`;
-    });
-    subTable += `</table>`;
-    content.innerHTML = subTable;
-    container.appendChild(content);
-  });
-
-  let coll = document.getElementsByClassName("collapsible");
-  for(let i=0;i<coll.length;i++){
-    coll[i].onclick = function(){
-      this.classList.toggle("active");
-      let content = this.nextElementSibling;
-      if(content.style.display==="block"){ content.style.display="none"; }
-      else { content.style.display="block"; }
-    }
-  }
-}
-
-function editDailyRecord(name,index){
-  let record = records.filter(r=>r.name===name)[index];
-  if(!record) return;
-  let hours = prompt("أدخل عدد الساعات الجديد", record.hours);
-  let calls = prompt("أدخل عدد المكالمات الجديد", record.calls);
-  if(hours!==null && calls!==null){
-    record.hours = Number(hours);
-    record.calls = Number(calls);
-    record.required = record.hours*17;
-    record.achieved = record.calls >= record.required;
-    renderRecords();
-    saveToLocalStorage();
-  }
-}
-
-function saveToLocalStorage(){ localStorage.setItem("prodData", JSON.stringify(records)); }
-function loadFromLocalStorage(){
-  let saved = localStorage.getItem("prodData");
-  if(saved){ records=JSON.parse(saved); renderRecords(); }
-}
-
-function exportExcel(){
-  let tableHTML = `<table><tr><th>اسم الموظف</th><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>نوت</th></tr>`;
-  records.forEach(r=>{
-    tableHTML += `<tr><td>${r.name}</td><td>${r.date}</td><td>${r.hours}</td><td>${r.calls}</td><td>${r.note}</td></tr>`;
-  });
-  tableHTML += `</table>`;
-  let workbook = XLSX.utils.book_new();
-  let sheet = XLSX.utils.table_to_sheet(new DOMParser().parseFromString(tableHTML,"text/html").querySelector("table"));
-  XLSX.utils.book_append_sheet(workbook,sheet,"Productivity");
-  XLSX.writeFile(workbook,"productivity_report.xlsx");
-}
-
-loadFromLocalStorage();
-</script>
-</body>
-</html>
