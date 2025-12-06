@@ -9,18 +9,21 @@
 body { font-family: Arial; background: #f5f5f5; margin:0; padding:20px; }
 .container { background:white; padding:20px; border-radius:12px; max-width:1000px; margin:auto; box-shadow:0 0 15px #ccc; margin-bottom:30px; }
 input, select, textarea { width:100%; padding:8px; margin:5px 0 10px; border:1px solid #aaa; border-radius:6px; box-sizing:border-box; }
-button { padding:8px 16px; border:none; border-radius:6px; cursor:pointer; margin:2px; }
+button { padding:6px 14px; border:none; border-radius:6px; cursor:pointer; margin:2px; }
 button.add { background:#28a745; color:white; }
 button.export { background:#007bff; color:white; }
 button.edit { background:#ffc107; color:white; }
 button.save { background:#28a745; color:white; }
 button.cancel { background:#dc3545; color:white; }
 table { width:100%; border-collapse:collapse; margin-top:20px; }
-th, td { padding:12px; border:1px solid #ddd; text-align:center; }
+th, td { padding:10px; border:1px solid #ddd; text-align:center; }
 th { background:#333; color:white; }
 .success { color:green; font-weight:bold; }
 .fail { color:red; font-weight:bold; }
 .note { font-size:0.9em; color:#555; }
+.subtable { width:90%; margin:5px auto; border:1px solid #bbb; border-radius:6px; }
+.subtable th { background:#555; color:white; font-size:0.9em; }
+.subtable td { font-size:0.9em; padding:5px; }
 </style>
 </head>
 <body>
@@ -117,6 +120,7 @@ function renderTable() {
     let achieved = empRecords.every(r=>r.calls>=r.required) && days>0;
     let notes = empRecords.map(r=>r.note).join(" | ") || "-";
 
+    // الصف الرئيسي للموظف
     let row = table.insertRow(-1);
     row.innerHTML = `
       <td>${name}</td>
@@ -126,28 +130,41 @@ function renderTable() {
       <td>${average}</td>
       <td class="${achieved?'success':'fail'}">${achieved?'✔ محقق':'✘ غير محقق'}</td>
       <td class="note">${notes}</td>
-      <td><button class="edit" onclick="editRecord('${name}')">تعديل</button></td>
+      <td></td>
     `;
+
+    // إضافة سجل يومي لكل موظف
+    if(days>0){
+      let subRow = table.insertRow(-1);
+      let cell = subRow.insertCell(0);
+      cell.colSpan = 8;
+      let subTable = `<table class="subtable">
+        <tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th></tr>`;
+      empRecords.forEach((r,i)=>{
+        subTable += `<tr>
+          <td>${r.date}</td>
+          <td>${r.hours}</td>
+          <td>${r.calls}</td>
+          <td>${r.note}</td>
+          <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
+        </tr>`;
+      });
+      subTable += `</table>`;
+      cell.innerHTML = subTable;
+    }
   });
 }
 
-function editRecord(name){
-  let empRecords = records.filter(r=>r.name===name);
-  if(empRecords.length===0){ alert("لا يوجد سجلات للتعديل"); return; }
-
-  let hours = prompt("أدخل عدد الساعات الجديد للموظف "+name, empRecords[empRecords.length-1].hours);
-  let calls = prompt("أدخل عدد المكالمات الجديد للموظف "+name, empRecords[empRecords.length-1].calls);
-
+function editDailyRecord(name,index){
+  let record = records.filter(r=>r.name===name)[index];
+  if(!record) return;
+  let hours = prompt("أدخل عدد الساعات الجديد", record.hours);
+  let calls = prompt("أدخل عدد المكالمات الجديد", record.calls);
   if(hours!==null && calls!==null){
-    hours = Number(hours);
-    calls = Number(calls);
-    // تحديث آخر سجل فقط
-    let lastRecord = empRecords[empRecords.length-1];
-    lastRecord.hours = hours;
-    lastRecord.calls = calls;
-    lastRecord.required = hours*17;
-    lastRecord.achieved = calls >= lastRecord.required;
-
+    record.hours = Number(hours);
+    record.calls = Number(calls);
+    record.required = record.hours*17;
+    record.achieved = record.calls >= record.required;
     renderTable();
     saveToLocalStorage();
   }
