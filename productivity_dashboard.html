@@ -28,7 +28,7 @@ th { background:#333; color:white; }
 <body>
 
 <div class="container">
-  <h2>Productivity Tracker</h2>
+  <h2>تتبع الإنتاجية - Productivity Tracker</h2>
   
   <label>اسم الموظف:</label>
   <select id="name">
@@ -60,8 +60,21 @@ th { background:#333; color:white; }
 </div>
 
 <div class="container">
-  <h2>Tracker</h2>
+  <h2>سجلات الموظفين</h2>
   <div id="recordsContainer"></div>
+</div>
+
+<div class="container">
+  <h2>ملخص الموظفين</h2>
+  <table id="summaryTable">
+    <tr>
+      <th>الاسم</th>
+      <th>إجمالي الأيام</th>
+      <th>إجمالي الساعات</th>
+      <th>إجمالي المكالمات</th>
+      <th>المتوسط الشهري</th>
+    </tr>
+  </table>
 </div>
 
 <script>
@@ -81,6 +94,7 @@ function addRecord() {
 
   records.push({ name, hours, calls, note: note||"-", date, achieved, required });
   renderRecords();
+  renderSummary();
   saveToLocalStorage();
 }
 
@@ -135,6 +149,29 @@ function renderRecords(){
   }
 }
 
+function renderSummary(){
+  let table = document.getElementById("summaryTable");
+  // حذف أي صفوف قديمة ما عدا الهيد
+  table.innerHTML = `<tr>
+      <th>الاسم</th>
+      <th>إجمالي الأيام</th>
+      <th>إجمالي الساعات</th>
+      <th>إجمالي المكالمات</th>
+      <th>المتوسط الشهري</th>
+    </tr>`;
+  let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
+  names.forEach(name=>{
+    let empRecords = records.filter(r=>r.name===name);
+    if(empRecords.length===0) return;
+    let days = empRecords.length;
+    let totalHours = empRecords.reduce((a,b)=>a+b.hours,0);
+    let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
+    let average = (totalCalls/days).toFixed(2);
+    let row = table.insertRow(-1);
+    row.innerHTML = `<td>${name}</td><td>${days}</td><td>${totalHours}</td><td>${totalCalls}</td><td>${average}</td>`;
+  });
+}
+
 function editDailyRecord(name,index){
   let record = records.filter(r=>r.name===name)[index];
   if(!record) return;
@@ -146,6 +183,7 @@ function editDailyRecord(name,index){
     record.required = record.hours*17;
     record.achieved = record.calls >= record.required;
     renderRecords();
+    renderSummary();
     saveToLocalStorage();
   }
 }
@@ -158,6 +196,7 @@ function deleteDailyRecord(name,index){
   if(mainIndex>-1){
     records.splice(mainIndex,1);
     renderRecords();
+    renderSummary();
     saveToLocalStorage();
   }
 }
@@ -165,7 +204,7 @@ function deleteDailyRecord(name,index){
 function saveToLocalStorage(){ localStorage.setItem("prodData", JSON.stringify(records)); }
 function loadFromLocalStorage(){
   let saved = localStorage.getItem("prodData");
-  if(saved){ records=JSON.parse(saved); renderRecords(); }
+  if(saved){ records=JSON.parse(saved); renderRecords(); renderSummary(); }
 }
 
 function exportExcel(){
