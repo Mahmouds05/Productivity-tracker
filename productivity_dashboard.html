@@ -1,28 +1,28 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>Productivity Tracker & Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: Arial; background:#f5f5f5; padding:20px; margin:0; }
-        .container { background:white; padding:20px; border-radius:10px; max-width:950px; margin:auto; box-shadow:0 0 10px #ccc; margin-bottom:30px; }
-        input, textarea, select { width:100%; padding:8px; margin:5px 0 10px; border:1px solid #aaa; border-radius:6px; box-sizing:border-box; }
-        button { padding:10px 20px; border:none; background:#333; color:white; border-radius:6px; cursor:pointer; margin-top:10px; margin-right:5px; }
-        table { width:100%; margin-top:20px; border-collapse:collapse; }
-        th, td { padding:10px; border:1px solid #ddd; text-align:center; }
-        th { background:#333; color:white; }
-        .success { color:green; font-weight:bold; }
-        .fail { color:red; font-weight:bold; }
-        h2,h3 { margin-bottom:10px; }
-        canvas { margin-top:20px; max-width:100%; }
-        @media (max-width: 600px) {
-            .container { padding:10px; }
-            button { width:100%; margin-bottom:10px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Productivity Tracker & Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body { font-family: Arial; background:#f5f5f5; margin:0; padding:20px; }
+    .container { background:white; padding:20px; border-radius:10px; max-width:1000px; margin:auto; box-shadow:0 0 10px #ccc; margin-bottom:30px; }
+    input, textarea, select { width:100%; padding:8px; margin:5px 0 10px; border:1px solid #aaa; border-radius:6px; box-sizing:border-box; }
+    button { padding:10px 20px; border:none; background:#333; color:white; border-radius:6px; cursor:pointer; margin-top:10px; margin-right:5px; }
+    table { width:100%; margin-top:20px; border-collapse:collapse; text-align:center; }
+    th, td { padding:10px; border:1px solid #ddd; }
+    th { background:#333; color:white; }
+    .success { color:green; font-weight:bold; }
+    .fail { color:red; font-weight:bold; }
+    h2,h3 { margin-bottom:10px; }
+    canvas { margin-top:20px; max-width:100%; }
+    @media (max-width: 600px) {
+        .container { padding:10px; }
+        button { width:100%; margin-bottom:10px; }
+    }
+</style>
 </head>
 <body>
 
@@ -32,9 +32,15 @@
 
     <label>اسم الموظف:</label>
     <select id="name">
-        <option value="Mahmoud">Mahmoud</option>
+        <option value="Nada">Nada</option>
+        <option value="Mayada">Mayada</option>
         <option value="Mohamed">Mohamed</option>
-        <option value="Adham">Adham</option>
+        <option value="Mohamed Ashraf">Mohamed Ashraf</option>
+        <option value="Hany">Hany</option>
+        <option value="Hesham">Hesham</option>
+        <option value="Awad">Awad</option>
+        <option value="Nehal">Nehal</option>
+        <option value="Abdelghany">Abdelghany</option>
     </select>
 
     <label>ساعات العمل الفعلية:</label>
@@ -51,16 +57,19 @@
 
     <button onclick="addRecord()">إضافة</button>
     <button onclick="exportExcel()">تصدير Excel</button>
+</div>
 
-    <h3>سجلات الشهر</h3>
+<div class="container">
+    <h2>سجلات الموظفين</h2>
     <table id="recordsTable">
         <tr>
             <th>الاسم</th>
-            <th>الساعات</th>
-            <th>المكالمات</th>
+            <th>عدد الأيام</th>
+            <th>إجمالي الساعات</th>
+            <th>إجمالي المكالمات</th>
+            <th>المتوسط الشهري</th>
             <th>تحقيق التارجت</th>
             <th>النوت</th>
-            <th>اليوم</th>
         </tr>
     </table>
 </div>
@@ -68,103 +77,110 @@
 <div class="container">
     <h2>Dashboard الفريق</h2>
     <canvas id="callsChart" height="150"></canvas>
-    <canvas id="targetChart" height="150"></canvas>
+    <canvas id="averageChart" height="150"></canvas>
 </div>
 
 <script>
-    let records = [];
-    function addRecord() {
-        let name = document.getElementById("name").value;
-        let hours = Number(document.getElementById("hours").value);
-        let calls = Number(document.getElementById("calls").value);
-        let note = document.getElementById("note").value;
-        let date = document.getElementById("date").value;
+let records = [];
 
-        if (!hours || !calls || !date) {
-            alert("من فضلك املأ كل البيانات الأساسية");
-            return;
-        }
+function addRecord() {
+    let name = document.getElementById("name").value;
+    let hours = Number(document.getElementById("hours").value);
+    let calls = Number(document.getElementById("calls").value);
+    let note = document.getElementById("note").value;
+    let date = document.getElementById("date").value;
 
-        let required = hours * 17;
-        let achieved = calls >= required;
+    if (!hours || !calls || !date) { alert("من فضلك املأ كل البيانات الأساسية"); return; }
 
-        let record = { name, hours, calls, note: note||"-", date, achieved, required };
-        records.push(record);
+    let required = hours * 17;
+    let achieved = calls >= required;
 
-        renderTable();
-        saveToLocalStorage();
-        updateCharts();
-    }
+    records.push({ name, hours, calls, note: note||"-", date, achieved, required });
+    renderTable();
+    saveToLocalStorage();
+    updateCharts();
+}
 
-    function renderTable() {
-        let table = document.getElementById("recordsTable");
-        table.innerHTML = `
-            <tr>
-                <th>الاسم</th>
-                <th>الساعات</th>
-                <th>المكالمات</th>
-                <th>تحقيق التارجت</th>
-                <th>النوت</th>
-                <th>اليوم</th>
-            </tr>
+function renderTable() {
+    let table = document.getElementById("recordsTable");
+    let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
+    table.innerHTML = `
+        <tr>
+            <th>الاسم</th>
+            <th>عدد الأيام</th>
+            <th>إجمالي الساعات</th>
+            <th>إجمالي المكالمات</th>
+            <th>المتوسط الشهري</th>
+            <th>تحقيق التارجت</th>
+            <th>النوت</th>
+        </tr>
+    `;
+    names.forEach(name => {
+        let empRecords = records.filter(r => r.name === name);
+        let days = empRecords.length;
+        let totalHours = empRecords.reduce((a,b)=>a+b.hours,0);
+        let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
+        let average = days ? (totalCalls / days).toFixed(2) : 0; // المتوسط الشهري حسب الأيام المسجلة
+        let achieved = empRecords.every(r => r.calls >= r.required) && days>0;
+        let notes = empRecords.map(r=>r.note).join(" | ") || "-";
+
+        let row = table.insertRow(-1);
+        row.innerHTML = `
+            <td>${name}</td>
+            <td>${days}</td>
+            <td>${totalHours}</td>
+            <td>${totalCalls}</td>
+            <td>${average}</td>
+            <td class="${achieved?'success':'fail'}">${achieved?'✔ محقق':'✘ غير محقق'}</td>
+            <td>${notes}</td>
         `;
-        for (let r of records) {
-            let row = table.insertRow(-1);
-            row.innerHTML = `
-                <td>${r.name}</td>
-                <td>${r.hours}</td>
-                <td>${r.calls}</td>
-                <td class="${r.achieved ? 'success' : 'fail'}">
-                    ${r.achieved ? "✔ محقق" : "✘ غير محقق"} (المطلوب: ${r.required})
-                </td>
-                <td>${r.note}</td>
-                <td>${r.date}</td>
-            `;
-        }
-    }
+    });
+}
 
-    function saveToLocalStorage() { localStorage.setItem("prodData", JSON.stringify(records)); }
-    function loadFromLocalStorage() {
-        let saved = localStorage.getItem("prodData");
-        if (saved) { records = JSON.parse(saved); renderTable(); updateCharts(); }
-    }
+function saveToLocalStorage() { localStorage.setItem("prodData", JSON.stringify(records)); }
+function loadFromLocalStorage() { 
+    let saved = localStorage.getItem("prodData"); 
+    if(saved){ records = JSON.parse(saved); renderTable(); updateCharts(); }
+}
 
-    function exportExcel() {
-        let table = document.getElementById("recordsTable");
-        let workbook = XLSX.utils.book_new();
-        let sheet = XLSX.utils.table_to_sheet(table);
-        XLSX.utils.book_append_sheet(workbook, sheet, "Productivity");
-        XLSX.writeFile(workbook, "productivity_report.xlsx");
-    }
+function exportExcel() {
+    let table = document.getElementById("recordsTable");
+    let workbook = XLSX.utils.book_new();
+    let sheet = XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(workbook, sheet, "Productivity");
+    XLSX.writeFile(workbook,"productivity_report.xlsx");
+}
 
-    // Dashboard
-    let callsChart, targetChart;
-    function updateCharts() {
-        let names = ["Mahmoud","Mohamed","Adham"];
-        let totalCalls = names.map(n => records.filter(r => r.name===n).reduce((a,b)=>a+b.calls,0));
-        let targetAchieved = names.map(n => {
-            let empRecords = records.filter(r => r.name===n);
-            let totalRequired = empRecords.reduce((a,b)=>a+b.required,0);
-            let totalDone = empRecords.reduce((a,b)=>a+b.calls,0);
-            return totalRequired===0 ? 0 : Math.round((totalDone/totalRequired)*100);
-        });
+// Dashboard
+let callsChart, averageChart;
+function updateCharts() {
+    let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
+    let totalCalls = names.map(n => records.filter(r=>r.name===n).reduce((a,b)=>a+b.calls,0));
+    let averages = names.map(n=>{
+        let empRecords = records.filter(r=>r.name===n);
+        let days = empRecords.length;
+        let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
+        return days ? (totalCalls/days).toFixed(2) : 0; // المتوسط الشهري حسب الأيام
+    });
 
-        if (callsChart) callsChart.destroy();
-        let ctx1 = document.getElementById("callsChart").getContext("2d");
-        callsChart = new Chart(ctx1, {
-            type: 'bar', data: { labels: names, datasets: [{ label: 'إجمالي المكالمات', data: totalCalls, backgroundColor: ['#3e95cd','#8e5ea2','#3cba9f'] }] },
-            options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
-        });
+    if(callsChart) callsChart.destroy();
+    let ctx1 = document.getElementById("callsChart").getContext("2d");
+    callsChart = new Chart(ctx1, {
+        type:'bar',
+        data:{labels:names,datasets:[{label:'إجمالي المكالمات', data:totalCalls, backgroundColor:'#3e95cd'}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+    });
 
-        if (targetChart) targetChart.destroy();
-        let ctx2 = document.getElementById("targetChart").getContext("2d");
-        targetChart = new Chart(ctx2, {
-            type: 'bar', data: { labels: names, datasets: [{ label: 'نسبة تحقيق التارجت %', data: targetAchieved, backgroundColor: ['#ff6384','#36a2eb','#ffce56'] }] },
-            options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, max:100}} }
-        });
-    }
+    if(averageChart) averageChart.destroy();
+    let ctx2 = document.getElementById("averageChart").getContext("2d");
+    averageChart = new Chart(ctx2, {
+        type:'bar',
+        data:{labels:names,datasets:[{label:'المتوسط الشهري للمكالمات', data:averages, backgroundColor:'#ff6384'}]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+    });
+}
 
-    loadFromLocalStorage();
+loadFromLocalStorage();
 </script>
 
 </body>
