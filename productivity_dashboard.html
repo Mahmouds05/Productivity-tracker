@@ -115,3 +115,72 @@ function renderRecords(){
         <td>${r.hours}</td>
         <td>${r.calls}</td>
         <td>${r.note}</td>
+        <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
+        <td><button class="delete" onclick="deleteDailyRecord('${name}',${i})">حذف</button></td>
+      </tr>`;
+    });
+    subTable += `</table>`;
+    content.innerHTML = subTable;
+    container.appendChild(content);
+  });
+
+  let coll = document.getElementsByClassName("collapsible");
+  for(let i=0;i<coll.length;i++){
+    coll[i].onclick = function(){
+      this.classList.toggle("active");
+      let content = this.nextElementSibling;
+      if(content.style.display==="block"){ content.style.display="none"; }
+      else { content.style.display="block"; }
+    }
+  }
+}
+
+function editDailyRecord(name,index){
+  let record = records.filter(r=>r.name===name)[index];
+  if(!record) return;
+  let hours = prompt("أدخل عدد الساعات الجديد", record.hours);
+  let calls = prompt("أدخل عدد المكالمات الجديد", record.calls);
+  if(hours!==null && calls!==null){
+    record.hours = Number(hours);
+    record.calls = Number(calls);
+    record.required = record.hours*17;
+    record.achieved = record.calls >= record.required;
+    renderRecords();
+    saveToLocalStorage();
+  }
+}
+
+function deleteDailyRecord(name,index){
+  if(!confirm("هل أنت متأكد أنك تريد حذف هذا اليوم؟")) return;
+  let allRecords = records.filter(r=>r.name===name);
+  let recordToDelete = allRecords[index];
+  let mainIndex = records.indexOf(recordToDelete);
+  if(mainIndex>-1){
+    records.splice(mainIndex,1);
+    renderRecords();
+    saveToLocalStorage();
+  }
+}
+
+function saveToLocalStorage(){ localStorage.setItem("prodData", JSON.stringify(records)); }
+function loadFromLocalStorage(){
+  let saved = localStorage.getItem("prodData");
+  if(saved){ records=JSON.parse(saved); renderRecords(); }
+}
+
+function exportExcel(){
+  let tableHTML = `<table><tr><th>اسم الموظف</th><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>نوت</th></tr>`;
+  records.forEach(r=>{
+    tableHTML += `<tr><td>${r.name}</td><td>${r.date}</td><td>${r.hours}</td><td>${r.calls}</td><td>${r.note}</td></tr>`;
+  });
+  tableHTML += `</table>`;
+  let workbook = XLSX.utils.book_new();
+  let sheet = XLSX.utils.table_to_sheet(new DOMParser().parseFromString(tableHTML,"text/html").querySelector("table"));
+  XLSX.utils.book_append_sheet(workbook,sheet,"Productivity");
+  XLSX.writeFile(workbook,"productivity_report.xlsx");
+}
+
+loadFromLocalStorage();
+</script>
+</body>
+</html>
