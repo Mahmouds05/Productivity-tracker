@@ -1,225 +1,710 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Productivity Tracker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-body { font-family: Arial; background: #f5f5f5; margin:0; padding:20px; }
-.container { background:white; padding:20px; border-radius:12px; max-width:1000px; margin:auto; box-shadow:0 0 15px #ccc; margin-bottom:30px; }
-input, select, textarea { width:100%; padding:8px; margin:5px 0 10px; border:1px solid #aaa; border-radius:6px; box-sizing:border-box; }
-button { padding:6px 14px; border:none; border-radius:6px; cursor:pointer; margin:2px; }
-button.add { background:#28a745; color:white; }
-button.export { background:#007bff; color:white; }
-button.edit { background:#ffc107; color:white; }
-button.delete { background:#dc3545; color:white; }
-.collapsible { background:#eee; cursor:pointer; padding:8px; width:100%; border:none; text-align:right; outline:none; font-size:15px; border-radius:6px; }
-.active, .collapsible:hover { background:#ccc; }
-.content { padding:0 10px; display:none; overflow:hidden; background-color:#f9f9f9; border-left:3px solid #ccc; margin-bottom:10px; border-radius:6px; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { padding:10px; border:1px solid #ddd; text-align:center; }
-th { background:#333; color:white; }
-.success { color:green; font-weight:bold; }
-.fail { color:red; font-weight:bold; }
-.note { font-size:0.9em; color:#555; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Productivity Tracker - V6</title>
+    <style>
+        :root {
+            /* Light Theme (Default) */
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --border: #dfe6e9;
+            --input-bg: #ffffff;
+            --th-bg: #f8f9fa;
+            --green: #27ae60;
+            --red: #c0392b;
+            --orange: #f39c12;
+            --purple: #8e44ad;
+            --grey: #95a5a6;
+            --dark-blue: #34495e;
+            --shadow: rgba(0,0,0,0.05);
+        }
+
+        /* Dark Theme Variables */
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary: #ecf0f1;
+            --accent: #5dade2;
+            --border: #333;
+            --input-bg: #2d2d2d;
+            --th-bg: #2c2c2c;
+            --shadow: rgba(0,0,0,0.5);
+            --dark-blue: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container { max-width: 1250px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 30px; position: relative; }
+        h1 { color: var(--primary); margin: 0; font-size: 1.8rem; }
+        p { color: #7f8c8d; }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0; /* Changed to right for English */
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px var(--shadow);
+            transition: 0.3s;
+        }
+        .theme-toggle:hover { transform: scale(1.1); }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        /* Backup Bar */
+        .backup-bar {
+            background: var(--dark-blue);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .backup-title { font-weight: bold; display: flex; align-items: center; gap: 5px; }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        
+        input, select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-family: inherit;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .month-picker { border: 2px solid var(--accent); background: var(--bg-color); font-weight: bold; color: var(--primary); }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        /* Text align left for English */
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background-color: var(--th-bg); color: var(--primary); font-weight: 600; }
+        tr:hover { background-color: var(--bg-color); }
+
+        .input-mini { width: 60px; text-align: center; }
+        .input-note { width: 100%; min-width: 150px; }
+        select.status-select { width: 130px; font-size: 0.9em; }
+
+        button { cursor: pointer; border: none; border-radius: 5px; padding: 8px 15px; font-family: inherit; transition: 0.3s; font-weight: 600; }
+        .btn-save { background-color: var(--primary); color: var(--bg-color); width: 100%; padding: 12px; margin-top: 20px; font-size: 1rem; }
+        .btn-save:hover { opacity: 0.9; }
+        
+        .btn-backup { background-color: var(--orange); color: white; }
+        .btn-restore { background-color: var(--green); color: white; position: relative; overflow: hidden; }
+        .btn-restore input[type="file"] { position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity=0); opacity: 0; outline: none; background: white; cursor: inherit; display: block; }
+        
+        .btn-excel-monthly { background-color: var(--purple); color: white; }
+        .btn-excel-daily { background-color: var(--green); color: white; }
+        .btn-filter { background-color: var(--accent); color: white; }
+        .btn-reset { background-color: var(--grey); color: white; }
+
+        .action-btn { padding: 4px 8px; font-size: 0.9rem; margin-left: 5px; color: white; border-radius: 4px; }
+        .edit-btn { background-color: var(--orange); }
+        .del-btn { background-color: var(--red); }
+
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: white; display: inline-block; min-width: 80px; text-align: center; }
+        .b-green { background: var(--green); }
+        .b-red { background: var(--red); }
+        .b-orange { background: var(--orange); }
+        .b-grey { background: var(--grey); }
+        .b-purple { background: var(--purple); }
+
+        .row-highlight { background-color: rgba(52, 152, 219, 0.1) !important; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg); padding: 25px; border-radius: 10px; width: 400px; max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+            color: var(--text-color);
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-header { font-weight: bold; font-size: 1.2rem; margin-bottom: 20px; color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; box-sizing: border-box; padding: 10px; background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Productivity Tracker</h2>
-  
-  <label>اسم الموظف:</label>
-  <select id="name">
-    <option value="Nada">Nada</option>
-    <option value="Mayada">Mayada</option>
-    <option value="Mohamed">Mohamed</option>
-    <option value="Mohamed Ashraf">Mohamed Ashraf</option>
-    <option value="Hany">Hany</option>
-    <option value="Hesham">Hesham</option>
-    <option value="Awad">Awad</option>
-    <option value="Nehal">Nehal</option>
-    <option value="Abdelghany">Abdelghany</option>
-  </select>
+    <header>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+        <h1>🚀 Team Productivity Tracker</h1>
+        <p>RETENTION TEAM</p>
+    </header>
 
-  <label>ساعات العمل:</label>
-  <input type="number" id="hours" min="0" max="8">
+    <div class="backup-bar">
+        <div class="backup-title">🛡️ Safe Zone (Backup & Restore)</div>
+        <div class="controls">
+            <button class="btn-backup" onclick="downloadBackup()">💾 Download Backup</button>
+            <button class="btn-restore">
+                ♻️ Restore Data
+                <input type="file" id="restoreFile" accept=".json" onchange="restoreBackup(this)">
+            </button>
+        </div>
+    </div>
 
-  <label>عدد المكالمات:</label>
-  <input type="number" id="calls" min="0">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📝 Daily Data Entry</span>
+            <div class="controls">
+                <label>Date:</label>
+                <input type="date" id="currentDate">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="entryTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th style="width: 80px;">Hours</th>
+                        <th style="width: 80px;">Calls</th>
+                        <th>Notes</th>
+                        <th>Preview</th>
+                    </tr>
+                </thead>
+                <tbody id="entryTableBody"></tbody>
+            </table>
+        </div>
+        <button class="btn-save" onclick="saveDailyData()">💾 Save Daily Entry</button>
+    </div>
 
-  <label>نوت / ملاحظة:</label>
-  <textarea id="note"></textarea>
+    <div class="card" style="border-top: 5px solid var(--purple);">
+        <div class="card-header">
+            <span class="card-title">📊 Monthly Report</span>
+            <div class="controls">
+                <label>Select Month:</label>
+                <input type="month" id="reportMonth" class="month-picker" onchange="calculateAndRenderStats()">
+                <button class="btn-excel-monthly" onclick="exportMonthlyToExcel()">📥 Export Report</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Work Days</th>
+                        <th>Leave Days</th>
+                        <th>Total Hours</th>
+                        <th>Total Calls</th>
+                        <th>Avg Performance</th>
+                        <th>Rating</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+        </div>
+    </div>
 
-  <label>التاريخ:</label>
-  <input type="date" id="date">
-
-  <button class="add" onclick="addRecord()">إضافة</button>
-  <button class="export" onclick="exportExcel()">تصدير Excel</button>
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📅 History Archive</span>
+            <div class="controls">
+                <input type="date" id="filterDate">
+                <select id="filterName">
+                    <option value="">All Names</option>
+                </select>
+                <button class="btn-filter" onclick="renderHistoryTable()">🔍 Search</button>
+                <button class="btn-reset" onclick="resetFilter()">Clear</button>
+                <button class="btn-excel-daily" onclick="exportDailyToExcel()">📥 Export History</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Hours</th>
+                        <th>Target</th>
+                        <th>Achieved</th>
+                        <th>Ratio</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="container">
-  <h2>History</h2>
-  <div id="recordsContainer"></div>
-</div>
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">Edit Record</div>
+        <input type="hidden" id="editId">
+        
+        <div class="form-group">
+            <label>Employee Name:</label>
+            <input type="text" id="editName" disabled style="background:var(--bg-color); color:var(--text-color);">
+        </div>
+        <div class="form-group">
+            <label>Date:</label>
+            <input type="date" id="editDate" disabled style="background:var(--bg-color); color:var(--text-color);">
+        </div>
+        <div class="form-group">
+            <label>Status:</label>
+            <select id="editStatus" onchange="toggleEditInputs()">
+                <option value="working">💼 Working</option>
+                <option value="vacation">🏖️ Annual Leave</option>
+                <option value="sick">🚑 Sick Leave</option>
+                <option value="absent">🚫 Absent</option>
+                <option value="off">🏠 Day Off</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Work Hours:</label>
+            <input type="number" id="editHours">
+        </div>
+        <div class="form-group">
+            <label>Calls Made:</label>
+            <input type="number" id="editCalls">
+        </div>
+        <div class="form-group">
+            <label>Notes:</label>
+            <input type="text" id="editNote">
+        </div>
 
-<div class="container">
-  <h2>ملخص الموظفين</h2>
-  <table id="summaryTable">
-    <tr>
-      <th>الاسم</th>
-      <th>إجمالي الأيام</th>
-      <th>إجمالي الساعات</th>
-      <th>إجمالي المكالمات</th>
-      <th>المتوسط الشهري</th>
-    </tr>
-  </table>
+        <div class="modal-actions">
+            <button class="btn-save" onclick="saveEdit()" style="margin:0">Update & Save</button>
+            <button class="btn-reset" onclick="closeModal()" style="margin:0">Cancel</button>
+        </div>
+    </div>
 </div>
 
 <script>
-let records = [];
+    // --- Configuration ---
+    // Changed key to ensure English data stays separate
+    const DB_KEY = 'teamProductivityDB_English_V6'; 
+    const TEAM_NAMES = ["Nada", "Mayada", "Mohamed", "Mohamed Ashraf", "Hany", "Hesham", "Awad", "Nehal", "Abdelghany"];
+    const TARGET_PER_HOUR = 17;
 
-function addRecord() {
-  let name = document.getElementById("name").value;
-  let hours = Number(document.getElementById("hours").value);
-  let calls = Number(document.getElementById("calls").value);
-  let note = document.getElementById("note").value;
-  let date = document.getElementById("date").value;
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Theme Check
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeBtn').textContent = '☀️';
+        }
 
-  if(!hours || !calls || !date){ alert("من فضلك املأ كل البيانات الأساسية"); return; }
+        document.getElementById('currentDate').valueAsDate = new Date();
+        const now = new Date();
+        document.getElementById('reportMonth').value = now.toISOString().slice(0, 7);
 
-  let required = hours * 17;
-  let achieved = calls >= required;
+        const nameSelect = document.getElementById('filterName');
+        TEAM_NAMES.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            nameSelect.appendChild(option);
+        });
 
-  records.push({ name, hours, calls, note: note||"-", date, achieved, required });
-  renderRecords();
-  renderSummary();
-  saveToLocalStorage();
-}
-
-function renderRecords(){
-  let container = document.getElementById("recordsContainer");
-  container.innerHTML = "";
-  let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
-  
-  names.forEach(name=>{
-    let empRecords = records.filter(r=>r.name===name);
-    if(empRecords.length===0) return;
-    
-    let totalHours = empRecords.reduce((a,b)=>a+b.hours,0);
-    let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
-    let days = empRecords.length;
-    let average = (totalCalls/days).toFixed(2);
-    let achieved = empRecords.every(r=>r.calls>=r.required);
-
-    // زر collabsible
-    let btn = document.createElement("button");
-    btn.className = "collapsible";
-    btn.innerHTML = `${name} - إجمالي الأيام: ${days}, ساعات: ${totalHours}, مكالمات: ${totalCalls}, متوسط: ${average}, ${achieved?'✔ محقق':'✘ غير محقق'}`;
-    container.appendChild(btn);
-
-    // content collapsible
-    let content = document.createElement("div");
-    content.className = "content";
-    let subTable = `<table><tr><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>النوت</th><th>تعديل</th><th>حذف</th></tr>`;
-    empRecords.forEach((r,i)=>{
-      subTable += `<tr>
-        <td>${r.date}</td>
-        <td>${r.hours}</td>
-        <td>${r.calls}</td>
-        <td>${r.note}</td>
-        <td><button class="edit" onclick="editDailyRecord('${name}',${i})">تعديل</button></td>
-        <td><button class="delete" onclick="deleteDailyRecord('${name}',${i})">حذف</button></td>
-      </tr>`;
+        renderEntryTable();
+        renderHistoryTable();
+        calculateAndRenderStats();
     });
-    subTable += `</table>`;
-    content.innerHTML = subTable;
-    container.appendChild(content);
-  });
 
-  let coll = document.getElementsByClassName("collapsible");
-  for(let i=0;i<coll.length;i++){
-    coll[i].onclick = function(){
-      this.classList.toggle("active");
-      let content = this.nextElementSibling;
-      if(content.style.display==="block"){ content.style.display="none"; }
-      else { content.style.display="block"; }
+    // --- Theme Toggle ---
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeBtn');
+        body.classList.toggle('dark-mode');
+        
+        if (body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+            btn.textContent = '☀️';
+        } else {
+            localStorage.setItem('theme', 'light');
+            btn.textContent = '🌙';
+        }
     }
-  }
-}
 
-function renderSummary(){
-  let table = document.getElementById("summaryTable");
-  // حذف أي صفوف قديمة ما عدا الهيد
-  table.innerHTML = `<tr>
-      <th>الاسم</th>
-      <th>إجمالي الأيام</th>
-      <th>إجمالي الساعات</th>
-      <th>إجمالي المكالمات</th>
-      <th>المتوسط الشهري</th>
-    </tr>`;
-  let names = ["Nada","Mayada","Mohamed","Mohamed Ashraf","Hany","Hesham","Awad","Nehal","Abdelghany"];
-  names.forEach(name=>{
-    let empRecords = records.filter(r=>r.name===name);
-    if(empRecords.length===0) return;
-    let days = empRecords.length;
-    let totalHours = empRecords.reduce((a,b)=>a+b.hours,0);
-    let totalCalls = empRecords.reduce((a,b)=>a+b.calls,0);
-    let average = (totalCalls/days).toFixed(2);
-    let row = table.insertRow(-1);
-    row.innerHTML = `<td>${name}</td><td>${days}</td><td>${totalHours}</td><td>${totalCalls}</td><td>${average}</td>`;
-  });
-}
+    // --- 1. Backup & Restore ---
+    function downloadBackup() {
+        const data = localStorage.getItem(DB_KEY);
+        if (!data || data === '[]') { alert('No data available to backup!'); return; }
 
-function editDailyRecord(name,index){
-  let record = records.filter(r=>r.name===name)[index];
-  if(!record) return;
-  let hours = prompt("أدخل عدد الساعات الجديد", record.hours);
-  let calls = prompt("أدخل عدد المكالمات الجديد", record.calls);
-  if(hours!==null && calls!==null){
-    record.hours = Number(hours);
-    record.calls = Number(calls);
-    record.required = record.hours*17;
-    record.achieved = record.calls >= record.required;
-    renderRecords();
-    renderSummary();
-    saveToLocalStorage();
-  }
-}
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `Team_Backup_EN_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 
-function deleteDailyRecord(name,index){
-  if(!confirm("هل أنت متأكد أنك تريد حذف هذا اليوم؟")) return;
-  let allRecords = records.filter(r=>r.name===name);
-  let recordToDelete = allRecords[index];
-  let mainIndex = records.indexOf(recordToDelete);
-  if(mainIndex>-1){
-    records.splice(mainIndex,1);
-    renderRecords();
-    renderSummary();
-    saveToLocalStorage();
-  }
-}
+    function restoreBackup(input) {
+        const file = input.files[0];
+        if (!file) return;
 
-function saveToLocalStorage(){ localStorage.setItem("prodData", JSON.stringify(records)); }
-function loadFromLocalStorage(){
-  let saved = localStorage.getItem("prodData");
-  if(saved){ records=JSON.parse(saved); renderRecords(); renderSummary(); }
-}
+        if (!confirm('⚠️ WARNING: Restoring will overwrite all current data with this file. Are you sure?')) {
+            input.value = ''; 
+            return;
+        }
 
-function exportExcel(){
-  let tableHTML = `<table><tr><th>اسم الموظف</th><th>التاريخ</th><th>ساعات</th><th>المكالمات</th><th>نوت</th></tr>`;
-  records.forEach(r=>{
-    tableHTML += `<tr><td>${r.name}</td><td>${r.date}</td><td>${r.hours}</td><td>${r.calls}</td><td>${r.note}</td></tr>`;
-  });
-  tableHTML += `</table>`;
-  let workbook = XLSX.utils.book_new();
-  let sheet = XLSX.utils.table_to_sheet(new DOMParser().parseFromString(tableHTML,"text/html").querySelector("table"));
-  XLSX.utils.book_append_sheet(workbook,sheet,"Productivity");
-  XLSX.writeFile(workbook,"productivity_report.xlsx");
-}
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (Array.isArray(data)) {
+                    localStorage.setItem(DB_KEY, JSON.stringify(data));
+                    alert('✅ Data restored successfully!');
+                    location.reload(); 
+                } else { alert('❌ Invalid file format'); }
+            } catch (err) { alert('❌ Error reading file'); }
+        };
+        reader.readAsText(file);
+    }
 
-loadFromLocalStorage();
+    // --- 2. Data Entry ---
+    function renderEntryTable() {
+        const tbody = document.getElementById('entryTableBody');
+        tbody.innerHTML = '';
+        TEAM_NAMES.forEach((name, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:bold;">${name}</td>
+                <td>
+                    <select id="status_${index}" class="status-select" onchange="toggleInputState(${index})">
+                        <option value="working">💼 Working</option>
+                        <option value="vacation">🏖️ Annual</option>
+                        <option value="sick">🚑 Sick</option>
+                        <option value="absent">🚫 Absent</option>
+                        <option value="off">🏠 Day Off</option>
+                    </select>
+                </td>
+                <td><input type="number" id="hours_${index}" class="input-mini" placeholder="0" oninput="previewStatus(${index})"></td>
+                <td><input type="number" id="calls_${index}" class="input-mini" placeholder="0" oninput="previewStatus(${index})"></td>
+                <td><input type="text" id="note_${index}" class="input-note" placeholder="..."></td>
+                <td id="preview_${index}">-</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleInputState(index) {
+        const status = document.getElementById(`status_${index}`).value;
+        const hoursInput = document.getElementById(`hours_${index}`);
+        const callsInput = document.getElementById(`calls_${index}`);
+        const previewCell = document.getElementById(`preview_${index}`);
+
+        if (status !== 'working') {
+            hoursInput.value = ''; callsInput.value = '';
+            hoursInput.disabled = true; callsInput.disabled = true;
+            hoursInput.style.opacity = '0.5'; callsInput.style.opacity = '0.5';
+            previewCell.innerHTML = '<span style="color:var(--grey)">Leave/Off</span>';
+        } else {
+            hoursInput.disabled = false; callsInput.disabled = false;
+            hoursInput.style.opacity = '1'; callsInput.style.opacity = '1';
+            previewCell.innerHTML = '-';
+        }
+    }
+
+    function previewStatus(index) {
+        const hours = parseFloat(document.getElementById(`hours_${index}`).value) || 0;
+        const calls = parseInt(document.getElementById(`calls_${index}`).value) || 0;
+        const previewCell = document.getElementById(`preview_${index}`);
+        if (hours > 0) {
+            const required = hours * TARGET_PER_HOUR;
+            const diff = calls - required;
+            const isAchieved = calls >= required;
+            let color = isAchieved ? 'var(--green)' : 'var(--red)';
+            previewCell.innerHTML = `<span style="color:${color}; font-weight:bold;">${isAchieved ? '✔️' : '❌'} (${diff > 0 ? '+' : ''}${diff})</span>`;
+        } else { previewCell.innerHTML = '-'; }
+    }
+
+    function saveDailyData() {
+        const date = document.getElementById('currentDate').value;
+        let dailyRecords = [];
+        let hasData = false;
+
+        TEAM_NAMES.forEach((name, index) => {
+            const status = document.getElementById(`status_${index}`).value;
+            const hours = parseFloat(document.getElementById(`hours_${index}`).value) || 0;
+            const calls = parseInt(document.getElementById(`calls_${index}`).value) || 0;
+            const note = document.getElementById(`note_${index}`).value;
+
+            if (status !== 'working' || (status === 'working' && hours > 0)) {
+                hasData = true;
+                let required = 0; let percent = 0;
+                if (status === 'working') {
+                    required = hours * TARGET_PER_HOUR;
+                    percent = (calls / required) * 100;
+                }
+                dailyRecords.push({
+                    id: Date.now() + index, date, name, status, hours, calls, required, percent, note
+                });
+            }
+        });
+
+        if (!hasData) { alert('No data entered! Please enter working hours or select leave status.'); return; }
+
+        let allHistory = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        allHistory = allHistory.filter(r => r.date !== date); 
+        allHistory = [...allHistory, ...dailyRecords];
+        localStorage.setItem(DB_KEY, JSON.stringify(allHistory));
+        
+        alert('✅ Saved Successfully!');
+        renderEntryTable();
+        renderHistoryTable();
+        calculateAndRenderStats();
+    }
+
+    // --- 3. Archive ---
+    function renderHistoryTable() {
+        let allHistory = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const filterDate = document.getElementById('filterDate').value;
+        const filterName = document.getElementById('filterName').value;
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = '';
+
+        allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (filterDate) allHistory = allHistory.filter(r => r.date === filterDate);
+        if (filterName) allHistory = allHistory.filter(r => r.name === filterName);
+
+        if (allHistory.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px;">No matching records</td></tr>';
+            return;
+        }
+
+        allHistory.forEach(r => {
+            let statusBadge = '', details = '';
+            if (r.status === 'working') {
+                const isAchieved = r.calls >= r.required;
+                const diff = r.calls - r.required;
+                const badgeClass = isAchieved ? 'b-green' : 'b-red';
+                statusBadge = `<span class="badge ${badgeClass}">${isAchieved ? 'Done' : 'Missed'}</span>`;
+                details = `<td>${r.hours}</td><td>${r.required}</td><td>${r.calls} <small style="color:${isAchieved?'var(--green)':'var(--red)'}">(${diff > 0 ? '+' : ''}${diff})</small></td><td>${r.percent.toFixed(1)}%</td>`;
+            } else {
+                let label = r.status === 'vacation' ? 'Annual Leave' : (r.status === 'sick' ? 'Sick Leave' : (r.status === 'absent' ? 'Absent' : 'Day Off'));
+                let colorClass = r.status === 'vacation' ? 'b-purple' : (r.status === 'sick' || r.status === 'absent' ? 'b-red' : 'b-grey');
+                statusBadge = `<span class="badge ${colorClass}">${label}</span>`;
+                details = `<td colspan="4" style="text-align:center; color:var(--grey);">-- ${label} --</td>`;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${r.date}</td><td><strong>${r.name}</strong></td><td>${statusBadge}</td>${details}
+                    <td style="font-size:0.9em;">${r.note}</td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="openEditModal(${r.id})">✏️</button>
+                        <button class="action-btn del-btn" onclick="deleteRecord(${r.id})">X</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    function resetFilter() {
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterName').value = '';
+        renderHistoryTable();
+    }
+
+    function deleteRecord(id) {
+        if(confirm('Delete this record?')) {
+            let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+            all = all.filter(r => r.id !== Number(id));
+            localStorage.setItem(DB_KEY, JSON.stringify(all));
+            renderHistoryTable(); calculateAndRenderStats();
+        }
+    }
+
+    // --- 4. Edit ---
+    function openEditModal(id) {
+        let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const r = all.find(rec => rec.id === Number(id));
+        if(!r) return;
+        
+        document.getElementById('editId').value = r.id;
+        document.getElementById('editName').value = r.name;
+        document.getElementById('editDate').value = r.date;
+        document.getElementById('editStatus').value = r.status || 'working';
+        document.getElementById('editHours').value = r.hours;
+        document.getElementById('editCalls').value = r.calls;
+        document.getElementById('editNote').value = r.note;
+        toggleEditInputs();
+        document.getElementById('editModal').style.display = 'flex';
+    }
+    function toggleEditInputs() {
+        const s = document.getElementById('editStatus').value;
+        const h = document.getElementById('editHours');
+        const c = document.getElementById('editCalls');
+        if(s!=='working'){ 
+            h.disabled=true; c.disabled=true; 
+            h.style.opacity='0.5'; c.style.opacity='0.5'; 
+            h.value=0; c.value=0; 
+        } else { 
+            h.disabled=false; c.disabled=false; 
+            h.style.opacity='1'; c.style.opacity='1'; 
+        }
+    }
+    function closeModal(){ document.getElementById('editModal').style.display='none'; }
+    function saveEdit() {
+        const id = Number(document.getElementById('editId').value);
+        const status = document.getElementById('editStatus').value;
+        const hours = parseFloat(document.getElementById('editHours').value)||0;
+        const calls = parseInt(document.getElementById('editCalls').value)||0;
+        const note = document.getElementById('editNote').value;
+        
+        let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const idx = all.findIndex(r => r.id === id);
+        if(idx !== -1) {
+            let req=0, per=0;
+            if(status==='working'){
+                if(hours<=0){alert('Please enter valid work hours.'); return;}
+                req = hours*TARGET_PER_HOUR; per = (calls/req)*100;
+            }
+            all[idx] = {...all[idx], status, hours, calls, required:req, percent:per, note};
+            localStorage.setItem(DB_KEY, JSON.stringify(all));
+            closeModal(); renderHistoryTable(); calculateAndRenderStats(); alert('Record updated successfully ✅');
+        }
+    }
+
+    // --- 5. Report Logic ---
+    function calculateAndRenderStats() {
+        let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const month = document.getElementById('reportMonth').value;
+        const tbody = document.getElementById('statsBody');
+        tbody.innerHTML = '';
+        
+        const monthly = all.filter(r => r.date.startsWith(month));
+        
+        TEAM_NAMES.forEach(name => {
+            const recs = monthly.filter(r => r.name === name);
+            if(recs.length === 0) {
+                tbody.innerHTML += `<tr><td>${name}</td><td colspan="6" style="text-align:center; color:var(--grey);">- No Data -</td></tr>`;
+                return;
+            }
+            const work = recs.filter(r => r.status === 'working');
+            const leave = recs.filter(r => r.status !== 'working');
+            
+            const daysW = work.length;
+            const daysL = leave.length;
+            const hrs = work.reduce((s,r)=>s+r.hours,0);
+            const cls = work.reduce((s,r)=>s+r.calls,0);
+            const totalP = work.reduce((s,r)=>s+r.percent,0);
+            const avg = daysW > 0 ? (totalP/daysW).toFixed(1) : 0;
+            
+            let clsName = avg>=100?'b-green':(avg>=85?'b-orange':'b-red');
+            let txt = avg>=100?'Excellent':(avg>=85?'Very Good':'Poor');
+            if(daysW===0){ clsName='b-grey'; txt='No Work'; }
+            
+            tbody.innerHTML += `
+                <tr class="row-highlight">
+                    <td style="font-weight:bold;">${name}</td>
+                    <td>${daysW}</td><td>${daysL}</td><td>${hrs}</td><td>${cls}</td>
+                    <td style="direction:ltr">${avg}%</td>
+                    <td><span class="badge ${clsName}">${txt}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    // --- 6. Exports ---
+    function exportMonthlyToExcel() {
+        let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const month = document.getElementById('reportMonth').value;
+        const monthly = all.filter(r => r.date.startsWith(month));
+        if(monthly.length===0){alert('No data for this month.'); return;}
+        
+        let csv = "\uFEFFReport For " + month + "\nName,Work Days,Leave Days,Hours,Calls,Avg Perf\n";
+        TEAM_NAMES.forEach(name => {
+            const r = monthly.filter(x => x.name === name);
+            if(r.length>0){
+                const w = r.filter(x => x.status==='working');
+                const daysW = w.length;
+                const daysL = r.length - daysW;
+                const hrs = w.reduce((a,b)=>a+b.hours,0);
+                const cls = w.reduce((a,b)=>a+b.calls,0);
+                const avg = daysW>0 ? (w.reduce((a,b)=>a+b.percent,0)/daysW).toFixed(1) : 0;
+                csv += `${name},${daysW},${daysL},${hrs},${cls},${avg}%\n`;
+            }
+        });
+        dlCSV(csv, `Monthly_Report_${month}_EN.csv`);
+    }
+
+    function exportDailyToExcel() {
+        let all = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        if(all.length===0){alert('No data found.'); return;}
+        let csv = "\uFEFFDate,Name,Status,Hours,Target,Calls,Ratio,Notes\n";
+        all.sort((a,b)=>new Date(b.date)-new Date(a.date));
+        all.forEach(r => {
+            let st = r.status==='working'?'Working':(r.status==='vacation'?'Annual':(r.status==='sick'?'Sick':(r.status==='absent'?'Absent':'Off')));
+            csv += `${r.date},${r.name},${st},${r.hours},${r.required},${r.calls},${r.percent?r.percent.toFixed(1):0}%,${r.note}\n`;
+        });
+        dlCSV(csv, "Full_History_EN.csv");
+    }
+
+    function dlCSV(content, name) {
+        const link = document.createElement("a");
+        link.href = encodeURI("data:text/csv;charset=utf-8," + content);
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>
+
 </body>
 </html>
